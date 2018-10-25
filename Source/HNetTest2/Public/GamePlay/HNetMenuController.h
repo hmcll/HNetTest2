@@ -4,17 +4,59 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
+#include "HNetMenuGameMode.h"
 #include "HNetMenuController.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class HNETTEST2_API AHNetMenuController : public APlayerController
+class HNETTEST2_API AHNetMenuController : public APlayerController ,public TSharedFromThis<AHNetMenuController>
 {
 	GENERATED_BODY()
 	
+public:
+	AHNetMenuController();
+
+	UFUNCTION()
+	void StartMatching();
 	
+	UFUNCTION(Client, Reliable, WithValidation)
+		void RoomStateChanged(ERoomState ToState);
+
+	UFUNCTION(Client, Reliable, WithValidation)
+		void OpponentLeft();
+	
+	ERoomState StateTo = ERoomState(-1);
+
+	bool RoomEnd;
+
+	void StartGame();
+
+	void LeaveRoom();
+
+	UFUNCTION()
+	void Win();
+
+	UFUNCTION()
+	void Lose();
+
+	void Tick(float DeltaTime)override;
+
+	UFUNCTION()
+		void MeMoved(int To, int From);
+
+	UFUNCTION()
+		void MeUsedCard(int To, int Card);
+
+	UFUNCTION(Client, Reliable, WithValidation)
+		void EnemyMoved(int To, int From);
+
+	UFUNCTION(Client, Reliable, WithValidation)
+		void EnemyUsedCard(int To, int Card);
+
+protected:
+	virtual void BeginPlay()override;
 	
 	
 };

@@ -2,5 +2,12 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
+#include "Core.h"
+#include "UnrealNetwork.h"
+#include "Online.h"
 
+class FHNetTest2Module : public FDefaultModuleImpl {
+public :
+	virtual void StartupModule() override;
+	virtual void ShutdownModule() override;
+};

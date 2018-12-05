@@ -39,6 +39,7 @@ public:
 	void Construct(const FArguments& InArgs);
 
 private:
+
 	bool IsMyRound = false;
 
 	TSharedPtr<class SUniformGridPanel> Board;
@@ -47,24 +48,24 @@ private:
 
 	TSharedPtr<class SHNetFunctionAreaWidget> RightFunctionArea;
 
-	TArray<TSharedPtr<class SHNetBoardItemWidget>> BoardItems;
-
+	TArray<struct BoardItem*> BoardItems;
+	
 	bool IsLeftSide;
 
-	int MyFakeTargetNum = 7, MyTrojanHorseNum = 0, MyCoreObjectNum = 0;
-
-	int EnemyFakeTargetNum = 7, EnemyTrojanHorseNum = 0, EnemyCoreObjectNum = 0;
-
-	bool MyForceDelete = true, EnemyForceDelete = true;
-
 	int SelectedItem = -1, SelectedCard = -1;
+
+	int *MyFakeTargetNum, *MyTrojanHorseNum, *MyCoreObjectNum;
+
+	int *EnemyFakeTargetNum, *EnemyTrojanHorseNum, *EnemyCoreObjectNum;
+
+	int *MyForceDeleteCountDown, *EnemyForceDeleteCountDown;
 
 	static inline bool IsValidPoint(FIntPoint point);
 
 	TSet<int> MovePoints;
 
 public:
-
+	
 	BordMoveDelegate BoardCard;
 
 	BordMoveDelegate BoardMove;
@@ -82,14 +83,16 @@ public:
 	UFUNCTION()
 	void CardSelected(ECardType Type);
 
-	void RoomStart(bool IsMeGoingFirst, TArray<ECardType> InitBoard);
+	void RoomStart(bool IsMeGoingFirst, TArray<ECardType> InitBoard, FVector2D MyColor, FVector2D EnemyColor);
 
-private:
 	void BoardItemOnClicked(int id);
+private:
 
 	int CheckWin();
 
 	void RoundStart();
+
+	void ClearMist();
 
 	void RoundEnd();
 

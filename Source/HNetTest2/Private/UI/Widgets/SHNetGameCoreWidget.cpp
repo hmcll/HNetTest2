@@ -6,57 +6,71 @@
 #include "SButton.h"
 #include "SOverlay.h"
 #include "SBox.h"
+#include "SBox.h"
 #include "SUniformGridPanel.h"
 #include "SHNetBoardItemWidget.h"
 #include "SHNetFunctionAreaWidget.h"
 #include "HNetGameInstance.h"
 #include "Engine.h"
 #include "SlateOptMacros.h"
+#include "HNetStyle.h"
+#include "HNetMenuWidgetStyle.h"
 #include "SHNetGameCoreWidget.h"
 
 BEGIN_SLATE_FUNCTION_BUILD_OPTIMIZATION
 void SHNetGameCoreWidget::Construct(const FArguments& InArgs)
 {
+
+	auto MenuStyle = &HNetStyle::Get().GetWidgetStyle<FHNetMenuStyle>("BPHNetMenuStyle");
 	ChildSlot
 	[
-		SNew(SHorizontalBox)
-		+ SHorizontalBox::Slot()
-		.HAlign(HAlign_Center)
-		.VAlign(VAlign_Center)
-		.FillWidth(3.5f)
-		[
-			SAssignNew(LeftFunctionArea,SHNetFunctionAreaWidget)
-		]
-		+ SHorizontalBox::Slot()
+		SNew(SBorder)
 		.HAlign(HAlign_Fill)
 		.VAlign(VAlign_Fill)
-		.FillWidth(9.f)
+		.BorderImage(&MenuStyle->MenuBackGroundBrush)
 		[
-			SNew(SOverlay)
-			+ SOverlay::Slot()
+			SNew(SHorizontalBox)
+			+ SHorizontalBox::Slot()
 			.HAlign(HAlign_Center)
-			.VAlign(VAlign_Top)
+			.VAlign(VAlign_Center)
+			.FillWidth(3.5f)
 			[
-				SNew(STextBlock)
-				.ColorAndOpacity(FColor::White)
-				.Text_Lambda([&]() {return IsMyRound ? FText::FromString(TEXT("MyRound")) : FText::FromString(TEXT("EenmyRound")); })
+				SAssignNew(LeftFunctionArea,SHNetFunctionAreaWidget)
+				.IsLeft(true)
+				.HUDIsMyRound(&IsMyRound)
 			]
-			+ SOverlay::Slot()
-			.Padding(BoxSize / 4.f)
+			+ SHorizontalBox::Slot()
+			.HAlign(HAlign_Fill)
+			.VAlign(VAlign_Fill)
+			.FillWidth(9.f)
 			[
-				SAssignNew(Board, SUniformGridPanel)
-				.MinDesiredSlotHeight(BoxSize)
-				.MinDesiredSlotWidth(BoxSize)
+				SNew(SOverlay)
+				+ SOverlay::Slot()
+				.Padding(BoxSize / 4.f)
+				[
+					SAssignNew(Board, SUniformGridPanel)
+					.MinDesiredSlotHeight(BoxSize)
+					.MinDesiredSlotWidth(BoxSize)
+				]
+			]
+			+ SHorizontalBox::Slot()
+			.HAlign(HAlign_Center)
+			.VAlign(VAlign_Center)
+			.FillWidth(3.5f)
+			[
+				SAssignNew(RightFunctionArea, SHNetFunctionAreaWidget)
+				.HUDIsMyRound(&IsMyRound)
+				.IsLeft(false)
 			]
 		]
-		+ SHorizontalBox::Slot()
-		.HAlign(HAlign_Center)
-		.VAlign(VAlign_Center)
-		.FillWidth(3.5f)
-		[
-			SAssignNew(RightFunctionArea, SHNetFunctionAreaWidget)
-		]
-		];
+	];
+
+}
+
+float SHNetGameCoreWidget::BoxSize = 0.f;
+
+void SHNetGameCoreWidget::RoomStart(bool IsMeGoingFirst, TArray<ECardType> InitBoard, FVector2D MyColor, FVector2D EnemyColor)
+{
 	BoardItems.SetNum(81, false);
 	for (int i = 0; i < 9; i++) {
 		for (int j = 0; j < 9; j++) {
@@ -65,30 +79,42 @@ void SHNetGameCoreWidget::Construct(const FArguments& InArgs)
 				[
 					SNew(SBox)
 					.WidthOverride(BoxSize)
-				.HeightOverride(BoxSize)
-				[
-					SAssignNew(BoardItems[PointToInt(FIntPoint(j, i))], SHNetBoardItemWidget)
-				]
+					.HeightOverride(BoxSize)
+					[
+						SNew(SHNetBoardItemWidget)
+						.ID(PointToInt(FIntPoint(j, i)))
+						.Board(this)
+						.DataPointer(&BoardItems[PointToInt(FIntPoint(j, i))])
+						.MyColor(MyColor)
+						.EnemyColor(EnemyColor)
+						.IsMyRound(&IsMyRound)
+					]
 				];
-			;
-			BoardItems[PointToInt(FIntPoint(j, i))]->id = PointToInt(FIntPoint(j, i));
-
-			BoardItems[PointToInt(FIntPoint(j, i))]->OnClicked.BindRaw(this, &SHNetGameCoreWidget::BoardItemOnClicked);
 		}
 	}
-}
-
-float SHNetGameCoreWidget::BoxSize = 0.f;
-
-void SHNetGameCoreWidget::RoomStart(bool IsMeGoingFirst, TArray<ECardType> InitBoard)
-{
 	IsMyRound = IsMeGoingFirst;
 	IsLeftSide = IsMeGoingFirst;
 	if (IsLeftSide) {
 		LeftFunctionArea->OnClicked.BindRaw(this, &SHNetGameCoreWidget::CardSelected);
+		MyFakeTargetNum = &LeftFunctionArea->FakeTargetNum;
+		MyTrojanHorseNum = &LeftFunctionArea->TrojanHorseNum;
+		MyCoreObjectNum = &LeftFunctionArea->CoreObjectNum;
+		MyForceDeleteCountDown = &LeftFunctionArea->ForceDeleteCountDown;
+		EnemyFakeTargetNum = &RightFunctionArea->FakeTargetNum;
+		EnemyTrojanHorseNum = &RightFunctionArea->TrojanHorseNum;
+		EnemyCoreObjectNum = &RightFunctionArea->CoreObjectNum;
+		EnemyForceDeleteCountDown = &RightFunctionArea->ForceDeleteCountDown;
 	}
 	else {
 		RightFunctionArea->OnClicked.BindRaw(this, &SHNetGameCoreWidget::CardSelected);
+		MyFakeTargetNum = &RightFunctionArea->FakeTargetNum;
+		MyTrojanHorseNum = &RightFunctionArea->TrojanHorseNum;
+		MyCoreObjectNum = &RightFunctionArea->CoreObjectNum;
+		MyForceDeleteCountDown = &RightFunctionArea->ForceDeleteCountDown;
+		EnemyFakeTargetNum = &LeftFunctionArea->FakeTargetNum;
+		EnemyTrojanHorseNum = &LeftFunctionArea->TrojanHorseNum;
+		EnemyCoreObjectNum = &LeftFunctionArea->CoreObjectNum;
+		EnemyForceDeleteCountDown = &LeftFunctionArea->ForceDeleteCountDown;
 	}
 	for (int i = 0; i < 18; i++) {
 		switch (InitBoard[i]) {
@@ -99,7 +125,8 @@ void SHNetGameCoreWidget::RoomStart(bool IsMeGoingFirst, TArray<ECardType> InitB
 		case ECardType::TrojanHorse:
 			int y = i / 9;
 			int x = i % 9;
-			BoardItems[PointToInt(FIntPoint(x, y))]->SetType(InitBoard[i], IsMeGoingFirst);
+			BoardItems[PointToInt(FIntPoint(x, y))]->Type = InitBoard[i];
+			BoardItems[PointToInt(FIntPoint(x, y))]->IsMine = IsMeGoingFirst;
 			break;
 		}
 	}
@@ -112,16 +139,17 @@ void SHNetGameCoreWidget::RoomStart(bool IsMeGoingFirst, TArray<ECardType> InitB
 		case ECardType::TrojanHorse:
 			int y = (i + 45) / 9;
 			int x = (i + 45) % 9;
-			BoardItems[PointToInt(FIntPoint(x, y))]->SetType(InitBoard[i], !IsMeGoingFirst);
+			BoardItems[PointToInt(FIntPoint(x, y))]->Type = InitBoard[i];
+			BoardItems[PointToInt(FIntPoint(x, y))]->IsMine = !IsMeGoingFirst;
 			break;
 		}
 	}
 	if (IsMyRound)
 		RoundStart();
-	else
+	else {
 		LeftFunctionArea->IsMyRound = true;
-
-
+		ClearMist();
+	}
 }
 
 inline FIntPoint SHNetGameCoreWidget::intToPoint(int id)
@@ -175,33 +203,39 @@ void SHNetGameCoreWidget::BoardItemOnClicked(int id) {
 						switch (ECardType(SelectedCard))
 						{
 						case ECardType::CoreObject:
-							MyCoreObjectNum--;
-							MyFakeTargetNum++;
-							BoardItems[id]->SetType(ECardType(SelectedCard), true);
-							if (BoardItems[id]->IsTrap() && !BoardItems[id]->IsMine()) {
-								BoardItems[id]->RemoveTrap();
-								BoardItems[id]->Trapped();
+							*MyCoreObjectNum--;
+							*MyFakeTargetNum++;
+							BoardItems[id]->Type = ECardType(SelectedCard);
+							BoardItems[id]->IsMine = true;
+							if (BoardItems[id]->IsEnemyTrap) {
+								BoardItems[id]->IsEnemyTrap = false;
+								BoardItems[id]->IsFlipped = true;
+								BoardItems[id]->IsTrapped = true;
 							}
 							break;
 						case ECardType::TrojanHorse:
-							MyTrojanHorseNum--;
-							MyFakeTargetNum++;
-							BoardItems[id]->SetType(ECardType(SelectedCard), true);
-							if (BoardItems[id]->IsTrap() && !BoardItems[id]->IsMine()) {
-								BoardItems[id]->RemoveTrap();
-								BoardItems[id]->Trapped();
+							*MyTrojanHorseNum--;
+							*MyFakeTargetNum++;
+							BoardItems[id]->Type = ECardType(SelectedCard);
+							BoardItems[id]->IsMine = true;
+							if (BoardItems[id]->IsEnemyTrap) {
+								BoardItems[id]->IsEnemyTrap = false;
+								BoardItems[id]->IsFlipped = true;
+								BoardItems[id]->IsTrapped = true;
 							}
 							break;
 						case ECardType::FakeTarget:
-							MyFakeTargetNum--;
-							BoardItems[id]->SetType(ECardType(SelectedCard), true);
-							if (BoardItems[id]->IsTrap() && !BoardItems[id]->IsMine()) {
-								BoardItems[id]->RemoveTrap();
-								BoardItems[id]->Trapped();
+							*MyFakeTargetNum--;
+							BoardItems[id]->Type = ECardType(SelectedCard);
+							BoardItems[id]->IsMine = true;
+							if (BoardItems[id]->IsEnemyTrap) {
+								BoardItems[id]->IsEnemyTrap = false;
+								BoardItems[id]->IsFlipped = true;
+								BoardItems[id]->IsTrapped = true;
 							}
 							break;
 						case ECardType::Trap:
-							BoardItems[id]->AddMyTrap();
+							BoardItems[id]->IsMyTrap = true;
 							break;
 						default:
 							break;
@@ -216,13 +250,12 @@ void SHNetGameCoreWidget::BoardItemOnClicked(int id) {
 			else { // Remove
 				BoardItems[id]->Delete();
 				BoardCard.ExecuteIfBound(id, SelectedCard);
-				ResetAllMovePoint();
 				RoundEnd();
 				return;
 			}
 		}
 		else if (SelectedItem == -1) {//New Click
-			if (BoardItems[id]->IsCard() && BoardItems[id]->IsMine()) {
+			if (BoardItems[id]->IsCard() && BoardItems[id]->IsMine) {
 				SelectedItem = id;
 				ShowMovePoint();
 			}
@@ -237,7 +270,7 @@ void SHNetGameCoreWidget::BoardItemOnClicked(int id) {
 					return;
 				}
 			}
-			if (BoardItems[id]->IsCard() && BoardItems[id]->IsMine()) {
+			if (BoardItems[id]->IsCard() && BoardItems[id]->IsMine) {
 				ResetAllMovePoint();
 				SelectedItem = id;
 				ShowMovePoint();
@@ -246,7 +279,6 @@ void SHNetGameCoreWidget::BoardItemOnClicked(int id) {
 		}
 	}
 }
-
 
 void SHNetGameCoreWidget::CardSelected(ECardType Type)
 {
@@ -265,20 +297,20 @@ void SHNetGameCoreWidget::CardSelected(ECardType Type)
 		case ECardType::CoreObject:
 		case ECardType::TrojanHorse:
 			for (auto i : BoardItems) {
-				if (i->IsMine() && i->GetType() == ECardType::FakeTarget) {
-					i->AddMovePoint();
-					MovePoints.Add(i->id);
+				if (i->IsMine && i->Type == ECardType::FakeTarget) {
+					i->IsMovePoint = true;
+					MovePoints.Add(i->ID);
 				}
 			}
 			break;
 		case ECardType::FakeTarget:
 			for (auto i : BoardItems) {
-				if (i->IsMine() && i->IsCard()) {
-					auto Cross = GetCross(i->id);
+				if (i->IsMine && i->IsCard()) {
+					auto Cross = GetCross(i->ID);
 					for (auto j : Cross) {
 						if (IsValidPoint(j)) {
 							if (!BoardItems[PointToInt(j)]->IsCard()) {
-								BoardItems[PointToInt(j)]->AddMovePoint();
+								BoardItems[PointToInt(j)]->IsMovePoint = true;
 								MovePoints.Add(PointToInt(j));
 							}
 						}
@@ -290,8 +322,8 @@ void SHNetGameCoreWidget::CardSelected(ECardType Type)
 		{
 			TSet<int> MovePointStack;
 			for (auto i : BoardItems) {
-				if (i->IsMine() && i->IsCard()) {
-					auto Cross = GetCross(i->id);
+				if (i->IsMine && i->IsCard()) {
+					auto Cross = GetCross(i->ID);
 					for (auto j : Cross) {
 						if (IsValidPoint(j)) {
 							if (!BoardItems[PointToInt(j)]->IsCard()) {
@@ -302,8 +334,8 @@ void SHNetGameCoreWidget::CardSelected(ECardType Type)
 				}
 			}
 			for (auto i : BoardItems) {
-				if (i->IsTrap()&&i->IsMine()) {
-					auto CenterCross = GetCross(i->id);
+				if (i->IsMyTrap) {
+					auto CenterCross = GetCross(i->ID);
 					for (auto CenterCrossIter : CenterCross) {
 						if(IsValidPoint(CenterCrossIter))
 							MovePointStack.Remove(PointToInt(CenterCrossIter));
@@ -317,7 +349,7 @@ void SHNetGameCoreWidget::CardSelected(ECardType Type)
 			}
 			for (int i : MovePointStack) {
 				MovePoints.Add(i);
-				BoardItems[i]->AddMovePoint();
+				BoardItems[i]->IsMovePoint = true;
 			}
 		}
 			break;
@@ -332,12 +364,24 @@ int SHNetGameCoreWidget::CheckWin()
 {
 	int MyC = 0, EnemyC = 0;
 	for (auto i : BoardItems) {
-		if (i->GetType() == ECardType::CoreObject) {
-			if (i->IsMine()) {
+		if (i->Type == ECardType::CoreObject) {
+			if (i->IsMine) {
 				MyC++;
 			}
 			else {
 				EnemyC++;
+			}
+		}
+		if (i->IsCard()) {
+			auto Cross = GetCross(i->ID);
+			for (auto j : Cross) {
+				if(IsValidPoint(j))
+					if (i->IsMine && BoardItems[PointToInt(j)]->IsEnemyTrap) {
+						i->IsNearTrap = true;
+					}
+					else if (!i->IsMine && BoardItems[PointToInt(j)]->IsMyTrap) {
+						i->IsNearTrap = true;
+					}
 			}
 		}
 	}
@@ -350,23 +394,56 @@ int SHNetGameCoreWidget::CheckWin()
 	return 0;
 }
 
+void SHNetGameCoreWidget::ClearMist() {
+
+	for (auto i : BoardItems) {
+		i->Misted = true;
+	}
+	for (auto i : BoardItems) {
+		if (i->IsMine) {
+			i->Misted = false;
+			if (i->IsCard()) {
+				auto Cross = GetCross(i->ID);
+				for (FIntPoint j : Cross) {
+					if (IsValidPoint(j)) {
+						BoardItems[PointToInt(j)]->Misted = false;
+					}
+				}
+			}
+		}
+		else if(i->IsMyTrap) {
+			auto Cross = GetCross(i->ID);
+			for (FIntPoint j : Cross) {
+				if (IsValidPoint(j)) {
+					if(BoardItems[PointToInt(j)]->IsCard())
+						BoardItems[PointToInt(j)]->Misted = false;
+				}
+			}
+		}
+		else if(i->IsTrapped){
+			i->Misted = false;
+		}
+
+	}
+}
 void SHNetGameCoreWidget::RoundStart() {
+	ClearMist();
 	int CheckWinRet = CheckWin();
 	if (!CheckWinRet) {
 		SelectedItem = -1;
 		SelectedCard = -1;
 		IsMyRound = true;
 		if (IsLeftSide) {
-			RightFunctionArea->IsMyRound = false;
-			LeftFunctionArea->IsMyRound = true;
+			RightFunctionArea->RoundEnd();
+			LeftFunctionArea->RoundStart();
 		}
 		else {
-			RightFunctionArea->IsMyRound = true;
-			LeftFunctionArea->IsMyRound = false;
+			RightFunctionArea->RoundStart();
+			LeftFunctionArea->RoundEnd();
 		}
 		for (auto i : BoardItems) {
-			if (i->IsCard() && i->IsMine() && i->IsTrapped) {
-				i->FreeFromTrap();
+			if (i->IsMine && i->IsTrapped) {
+				i->IsTrapped = false;
 			}
 		}
 	}
@@ -385,16 +462,16 @@ void SHNetGameCoreWidget::RoundEnd() {
 	if (!CheckWinRet) {
 		IsMyRound = false;
 		if (!IsLeftSide) {
-			RightFunctionArea->IsMyRound = false;
-			LeftFunctionArea->IsMyRound = true;
+			RightFunctionArea->RoundEnd();
+			LeftFunctionArea->RoundStart();
 		}
 		else {
-			RightFunctionArea->IsMyRound = true;
-			LeftFunctionArea->IsMyRound = false;
+			RightFunctionArea->RoundStart();
+			LeftFunctionArea->RoundEnd();
 		}
 		for (auto i : BoardItems) {
-			if (i->IsCard() && !i->IsMine() && i->IsTrapped) {
-				i->FreeFromTrap();
+			if (!i->IsMine && i->IsTrapped) {
+				i->IsTrapped = false;
 			}
 		}
 	}
@@ -406,49 +483,49 @@ void SHNetGameCoreWidget::RoundEnd() {
 			Lose.ExecuteIfBound();
 		}
 	}
+	ClearMist();
 }
-
 
 void SHNetGameCoreWidget::ResetAllMovePoint() {
 	if(IsValidPoint(intToPoint(SelectedItem)))
-		BoardItems[SelectedItem]->RemoveSelectedPoint();
+		BoardItems[SelectedItem]->IsSelected = false;
 	SelectedItem = -1;
 	SelectedCard = -1;
 	for (int i : MovePoints) {
-		BoardItems[i]->RemoveMovePoint();
+		BoardItems[i]->IsMovePoint = false;
 	}
 	MovePoints.Reset();
 }
 
 void SHNetGameCoreWidget::ShowMovePoint() {
 	FIntPoint Base = intToPoint(SelectedItem);
-	BoardItems[SelectedItem]->AddSelectedPoint();
+	BoardItems[SelectedItem]->IsSelected = true;
 	TArray<FIntPoint> Cross = GetCross(SelectedItem);
 	for (auto Move : Cross) {
 		if (!IsValidPoint(Move))continue;
-		if (BoardItems[PointToInt(Move)]->GetType() == ECardType::Delete) {
-			BoardItems[PointToInt(Move)]->AddMovePoint();
+		if (BoardItems[PointToInt(Move)]->Type == ECardType::Delete) {
+			BoardItems[PointToInt(Move)]->IsMovePoint = true;
 			MovePoints.Add(PointToInt(Move));
 		}
 		else {
-			if (BoardItems[PointToInt(Move)]->IsMine()) {
+			if (BoardItems[PointToInt(Move)]->IsMine) {
 				int range = 0;
 				FIntPoint BaseTemp = Move;
 				FIntPoint MoveVector = Move - Base;
-				while (IsValidPoint(BaseTemp + MoveVector) && BoardItems[PointToInt(BaseTemp)]->GetType() != ECardType::Delete && BoardItems[PointToInt(BaseTemp)]->IsMine()) {
+				while (IsValidPoint(BaseTemp + MoveVector) && BoardItems[PointToInt(BaseTemp)]->Type != ECardType::Delete && BoardItems[PointToInt(BaseTemp)]->IsMine) {
 					range++;
 					BaseTemp += MoveVector;
 				}
-				while (IsValidPoint(BaseTemp + MoveVector) && BoardItems[PointToInt(BaseTemp)]->GetType() == ECardType::Delete && range) {
+				while (IsValidPoint(BaseTemp + MoveVector) && BoardItems[PointToInt(BaseTemp)]->Type == ECardType::Delete && range) {
 					range--;
 					BaseTemp += MoveVector;
 				}
-				BoardItems[PointToInt(BaseTemp)]->AddMovePoint();
+				BoardItems[PointToInt(BaseTemp)]->IsMovePoint = true;
 				MovePoints.Add(PointToInt(BaseTemp));
 			}
 			else {
 				if (!CheckIsWall(Move)) {
-					BoardItems[PointToInt(Move)]->AddMovePoint();
+					BoardItems[PointToInt(Move)]->IsMovePoint = true;
 					MovePoints.Add(PointToInt(Move));
 				}
 			}
@@ -457,22 +534,21 @@ void SHNetGameCoreWidget::ShowMovePoint() {
 }
 
 void SHNetGameCoreWidget::MeAttack(int To, int From) {
-	switch (BoardItems[To]->GetType()) {
+	switch (BoardItems[To]->Type) {
 	case ECardType::CoreObject:
-		MyCoreObjectNum++;
+		*MyCoreObjectNum++;
 		break;
 	case ECardType::FakeTarget:
-		MyFakeTargetNum++;
+		*MyFakeTargetNum++;
 		break;
 	case ECardType::TrojanHorse:
-		MyTrojanHorseNum++;
+		*MyTrojanHorseNum++;
 		break;
 	}
-	if (BoardItems[To]->IsTrapped)
-		BoardItems[To]->FreeFromTrap();
-	if (BoardItems[To]->IsTrap() && !BoardItems[To]->IsMine()) {
-		BoardItems[To]->RemoveTrap();
-		BoardItems[To]->Trapped();
+	BoardItems[To]->IsTrapped = false;
+	if (BoardItems[To]->IsEnemyTrap) {
+		BoardItems[To]->IsEnemyTrap = false;
+		BoardItems[To]->IsTrapped = true;
 	}
 	BoardItems[From]->Go(BoardItems[To]);
 }
@@ -492,24 +568,23 @@ void SHNetGameCoreWidget::MeShoot(int To, int From) {
 		MoveNum = abs(MoveRoute.X);
 		MoveVector = MoveRoute / MoveNum;
 	}
-	switch (BoardItems[To]->GetType()) {
+	switch (BoardItems[To]->Type) {
 	case ECardType::CoreObject:
-		MyCoreObjectNum++;
+		*MyCoreObjectNum++;
 		break;
 	case ECardType::FakeTarget:
-		MyFakeTargetNum++;
+		*MyFakeTargetNum++;
 		break;
 	case ECardType::TrojanHorse:
-		MyTrojanHorseNum++;
+		*MyTrojanHorseNum++;
 		break;
 	}
-	if (BoardItems[To]->IsTrapped)
-		BoardItems[To]->FreeFromTrap();
+	BoardItems[To]->IsTrapped = false;
 	for (int i = 0; i <= MoveNum; i++) {
 		auto ThisMove = BoardItems[PointToInt(MoveVector*i + FromPoint)];
-		if (ThisMove->IsTrap() && !ThisMove->IsMine()) {
-			ThisMove->RemoveTrap();
-			BoardItems[To]->Trapped();
+		if (ThisMove->IsEnemyTrap) {
+			ThisMove->IsEnemyTrap = false;
+			BoardItems[To]->IsTrapped = true;
 		}
 	}
 	BoardItems[From]->Go(BoardItems[To]);
@@ -518,22 +593,21 @@ void SHNetGameCoreWidget::MeShoot(int To, int From) {
 void SHNetGameCoreWidget::EnemyMoved(int To, int From) {
 	auto p = intToPoint(To) - intToPoint(From);
 	if (p.X + p.Y == 1) {
-		switch (BoardItems[To]->GetType()) {
+		switch (BoardItems[To]->Type) {
 		case ECardType::CoreObject:
-			EnemyCoreObjectNum++;
+			*EnemyCoreObjectNum++;
 			break;
 		case ECardType::FakeTarget:
-			EnemyFakeTargetNum++;
+			*EnemyFakeTargetNum++;
 			break;
 		case ECardType::TrojanHorse:
-			EnemyTrojanHorseNum++;
+			*EnemyTrojanHorseNum++;
 			break;
 		}
-		if (BoardItems[To]->IsTrapped)
-			BoardItems[To]->FreeFromTrap();
-		if (BoardItems[To]->IsTrap() && BoardItems[To]->IsMine()) {
-			BoardItems[To]->RemoveTrap();
-			BoardItems[To]->Trapped();
+		BoardItems[To]->IsTrapped = false;
+		if (BoardItems[To]->IsMyTrap) {
+			BoardItems[To]->IsMyTrap = false;
+			BoardItems[To]->IsTrapped = true;
 		}
 		BoardItems[From]->Go(BoardItems[To]);
 	}
@@ -552,24 +626,23 @@ void SHNetGameCoreWidget::EnemyMoved(int To, int From) {
 			MoveNum = abs(MoveRoute.X);
 			MoveVector = MoveRoute / MoveNum;
 		}
-		switch (BoardItems[To]->GetType()) {
+		switch (BoardItems[To]->Type) {
 		case ECardType::CoreObject:
-			EnemyCoreObjectNum++;
+			*EnemyCoreObjectNum++;
 			break;
 		case ECardType::FakeTarget:
-			EnemyFakeTargetNum++;
+			*EnemyFakeTargetNum++;
 			break;
 		case ECardType::TrojanHorse:
-			EnemyTrojanHorseNum++;
+			*EnemyTrojanHorseNum++;
 			break;
 		}
-		if (BoardItems[To]->IsTrapped)
-			BoardItems[To]->FreeFromTrap();
+		BoardItems[To]->IsTrapped = false;
 		for (int i = 0; i <= MoveNum; i++) {
 			auto ThisMove = BoardItems[PointToInt(MoveVector*i + FromPoint)];
-			if (ThisMove->IsTrap() && ThisMove->IsMine()) {
-				ThisMove->RemoveTrap();
-				BoardItems[To]->Trapped();
+			if (ThisMove->IsMyTrap) {
+				ThisMove->IsMyTrap = false;
+				BoardItems[To]->IsTrapped = true;
 			}
 		}
 		BoardItems[From]->Go(BoardItems[To]);
@@ -585,31 +658,37 @@ void SHNetGameCoreWidget::EnemyCard(int To, int Card) {
 		BoardItems[To]->Delete();
 		break;
 	case ECardType::CoreObject:
-		EnemyCoreObjectNum--;
-		if (BoardItems[To]->IsTrap() && BoardItems[To]->IsMine()) {
-			BoardItems[To]->RemoveTrap();
-			BoardItems[To]->Trapped();
+		*EnemyCoreObjectNum--;
+		if (BoardItems[To]->IsMyTrap) {
+			BoardItems[To]->IsMyTrap = false;
+			BoardItems[To]->IsFlipped = true;
+			BoardItems[To]->IsTrapped = true;
 		}
-		BoardItems[To]->SetType(ECardType(Card), false);
+		BoardItems[To]->Type = ECardType(Card);
+		BoardItems[To]->IsMine = false;
 		break;
 	case ECardType::TrojanHorse:
-		EnemyTrojanHorseNum--;
-		if (BoardItems[To]->IsTrap() && BoardItems[To]->IsMine()) {
-			BoardItems[To]->RemoveTrap();
-			BoardItems[To]->Trapped();
+		*EnemyTrojanHorseNum--;
+		if (BoardItems[To]->IsMyTrap) {
+			BoardItems[To]->IsMyTrap = false;
+			BoardItems[To]->IsFlipped = true;
+			BoardItems[To]->IsTrapped = true;
 		}
-		BoardItems[To]->SetType(ECardType(Card), false);
+		BoardItems[To]->Type = ECardType(Card);
+		BoardItems[To]->IsMine = false;
 		break;
 	case ECardType::FakeTarget:
-		EnemyFakeTargetNum--;
-		if (BoardItems[To]->IsTrap() && BoardItems[To]->IsMine()) {
-			BoardItems[To]->RemoveTrap();
-			BoardItems[To]->Trapped();
+		*EnemyFakeTargetNum--;
+		if (BoardItems[To]->IsMyTrap) {
+			BoardItems[To]->IsMyTrap = false;
+			BoardItems[To]->IsFlipped = true;
+			BoardItems[To]->IsTrapped = true;
 		}
-		BoardItems[To]->SetType(ECardType(Card), false);
+		BoardItems[To]->Type = ECardType(Card);
+		BoardItems[To]->IsMine = false;
 		break;
 	case ECardType::Trap:
-		BoardItems[To]->AddEnemyTrap();
+		BoardItems[To]->IsEnemyTrap = true;
 		break;
 	default:
 		break;

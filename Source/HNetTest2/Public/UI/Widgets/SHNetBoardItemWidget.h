@@ -11,74 +11,75 @@
  */
 
 struct BoardItem{
-	bool IsFlipped = false;
-	bool isMine = false;
+	//Properties Travel With Pawn
+	bool IsFlipped;
+	bool IsMine;
 	ECardType Type = ECardType::Delete;
+
+	//Properties Modified when Travelling
+	bool IsNearTrap;
+	bool IsTrapped;
+
+	//Maintained By Board
+	bool IsMovePoint;
+	bool IsSelected;
+	bool IsMyTrap;
+	bool IsEnemyTrap;
+	bool Misted;
+	int ID;
+	inline void Delete() {
+		IsFlipped = IsMine = IsMovePoint = IsSelected = IsTrapped = IsMyTrap = IsEnemyTrap = IsNearTrap = false;
+		Type = ECardType::Delete;
+	}
+
+	BoardItem() {
+		Delete();
+	}
+
+	inline bool IsCard()const {
+		return int(Type) >= 1 && int(Type) <= 3;
+	}
+	inline void Go(BoardItem* to) {
+		to->Type = Type;
+		to->IsFlipped = IsFlipped;
+		to->IsMine = IsMine;
+		to->IsNearTrap = false;
+		Type = ECardType::Delete;
+		IsFlipped = false;
+		IsMine = false;
+		IsNearTrap = false;
+		IsTrapped = false;
+	}
 };
 
 DECLARE_DELEGATE_OneParam(OnClickedDelegate,int)
 
-class HNETTEST2_API SHNetBoardItemWidget : public SCompoundWidget
+class HNETTEST2_API SHNetBoardItemWidget : public SCompoundWidget, public FGCObject
 {
-	bool _IsMovePoint;
-
-	bool _IsTrapped;
-
-	bool _IsTrap;
 
 	BoardItem Data;
 
 public:
 	SLATE_BEGIN_ARGS(SHNetBoardItemWidget)
 	{}
+	SLATE_ARGUMENT(FVector2D, MyColor)
+	SLATE_ARGUMENT(FVector2D, EnemyColor)
+	SLATE_ARGUMENT(int, ID)
+	SLATE_ARGUMENT(class SHNetGameCoreWidget*, Board)
+	SLATE_ARGUMENT(bool*, IsMyRound)
+	SLATE_ARGUMENT(BoardItem**, DataPointer)
 	SLATE_END_ARGS()
 
 	/** Constructs this widget with InArgs */
 	void Construct(const FArguments& InArgs);
-
-	TSharedPtr<class STextBlock> Tag;
-	TSharedPtr<class STextBlock> Player;
-	TSharedPtr<class STextBlock> Trap;
-	TSharedPtr<class STextBlock> MovePoint;
-	TSharedPtr<class STextBlock> IsTrapped;
-
-	int id;
-
-	bool IsMovePoint();
-
-	bool IsMine();
-
-	bool IsCard();
-
-	bool IsTrap();
-
-	void AddMovePoint();
-
-	void RemoveMovePoint();
-
-	void AddSelectedPoint();
-
-	void RemoveSelectedPoint();
-
-	void AddMyTrap();
-
-	void Trapped();
-
-	void Delete();
-
-	void FreeFromTrap();
-
-	void Go(TSharedPtr<SHNetBoardItemWidget> To);
-
-	void AddEnemyTrap();
-
-	void RemoveTrap();
-
-	void SetType(ECardType In, bool IsMine);
-
-	void SetType(BoardItem data);
-
-	ECardType GetType();
 	
 	OnClickedDelegate OnClicked;
+
+	UPROPERTY()
+	UMaterialInstanceDynamic* PawnMaterialInstance;
+
+	FSlateBrush* PawnBrush;
+	void AddReferencedObjects(FReferenceCollector& Collector)override;
+
+	bool* IsMyRound;
 };

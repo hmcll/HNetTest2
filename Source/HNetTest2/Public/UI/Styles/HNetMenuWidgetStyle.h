@@ -43,8 +43,6 @@ struct HNETTEST2_API FHNetMenuStyle : public FSlateWidgetStyle
 	UPROPERTY(EditAnyWhere, Category = Menu)
 		FColor OpponentLeftBackground;
 
-	UPROPERTY(EditAnyWhere, Category = Game)
-		FSlateBrush FunctionAreaCoverBrush;
 
 };
 

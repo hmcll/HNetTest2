@@ -24,6 +24,26 @@ struct HNETTEST2_API FHNetGameStyle : public FSlateWidgetStyle
 	static const FName TypeName;
 	virtual const FName GetTypeName() const override { return TypeName; };
 	static const FHNetGameStyle& GetDefault();
+
+
+	UPROPERTY(EditAnyWhere, Category = Game)
+		FSlateBrush FunctionAreaCoverBrush;
+
+	UPROPERTY(EditAnyWhere, Category = Game)
+		FButtonStyle InvisibleButtonStyle;
+
+	UPROPERTY(EditAnyWhere, Category = Game)
+		UMaterialInterface* PawnMat;
+
+	UPROPERTY(EditAnyWhere, Category = Game)
+		UMaterialInterface* PawnSelectionAreaMat;
+
+	UPROPERTY(EditAnyWhere, Category = Game)
+		UMaterialInterface* Trap;
+
+	UPROPERTY(EditAnyWhere, Category = Game)
+		UMaterialInterface* Delete;
+
 };
 
 /**

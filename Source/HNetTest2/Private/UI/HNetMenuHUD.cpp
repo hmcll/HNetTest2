@@ -40,7 +40,12 @@ void AHNetMenuHUD::RoomStart(bool MeGoingFirst, TArray<ECardType> InitBoard)
 		GameCoreWidget->Win.BindUObject(PlayerController, &AHNetMenuController::Win);
 		GameCoreWidget->Lose.BindUObject(PlayerController, &AHNetMenuController::Lose);
 		GEngine->GameViewport->AddViewportWidgetContent(SNew(SWeakWidget).PossiblyNullContent(GameCoreWidget.ToSharedRef()));
-		GameCoreWidget->RoomStart(MeGoingFirst,InitBoard);
+		if (MeGoingFirst) {
+			GameCoreWidget->RoomStart(MeGoingFirst, InitBoard, PlayerController->MyColor, PlayerController->EnemyColor);
+		}
+		else {
+			GameCoreWidget->RoomStart(MeGoingFirst, InitBoard, PlayerController->EnemyColor, PlayerController->MyColor);
+		}
 	}
 
 }

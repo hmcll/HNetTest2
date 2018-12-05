@@ -29,6 +29,10 @@ public:
 	
 	ERoomState StateTo = ERoomState(-1);
 
+	FVector2D MyColor = FVector2D(0,0.1);
+
+	FVector2D EnemyColor = FVector2D(0.7,0.8);
+
 	bool RoomEnd;
 
 	void StartGame();

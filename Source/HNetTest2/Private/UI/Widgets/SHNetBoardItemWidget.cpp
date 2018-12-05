@@ -3,220 +3,61 @@
 #include "SHNetBoardItemWidget.h"
 #include "SButton.h"
 #include "STextBlock.h"
+#include "SImage.h"
 #include "VerticalBox.h"
 #include "SlateOptMacros.h"
+#include "HNetStyle.h"
+#include "HNetGameWidgetStyle.h"
+#include "SHNetGameCoreWidget.h"
+#include "Runtime/Engine/Classes/Kismet/KismetMaterialLibrary.h"
 
 BEGIN_SLATE_FUNCTION_BUILD_OPTIMIZATION
 void SHNetBoardItemWidget::Construct(const FArguments& InArgs)
 {
-
+	auto Style = &HNetStyle::Get().GetWidgetStyle<FHNetGameStyle>("BPHNetGameStyle");
+	PawnMaterialInstance = UKismetMaterialLibrary::CreateDynamicMaterialInstance(GEngine->GetWorld(), Style->PawnMat);
+	PawnBrush = new FSlateBrush();
+	PawnBrush->SetResourceObject(PawnMaterialInstance);
+	Data.ID = InArgs._ID;
+	IsMyRound = InArgs._IsMyRound;
+	PawnMaterialInstance->SetVectorParameterValue(FName(TEXT("Color")), FLinearColor(FVector4(InArgs._MyColor,InArgs._EnemyColor)));
+	OnClicked.BindRaw(InArgs._Board, &SHNetGameCoreWidget::BoardItemOnClicked);
+	*InArgs._DataPointer = &Data;
 	ChildSlot
 	[
 		SNew(SButton)
+		.ButtonStyle(&Style->InvisibleButtonStyle)
 		.OnClicked_Lambda([&]() {
-			if(!_IsTrapped)
-			switch (Data.Type)
-			{
-			case ECardType::Delete:
-				break;
-			case ECardType::CoreObject:
-			case ECardType::TrojanHorse:
-			case ECardType::FakeTarget:
-				OnClicked.ExecuteIfBound(id);
-				return FReply::Handled();
-				break;
-			case ECardType::Trap:
-				break;
-			default:
-				break;
-			}
-			if (_IsMovePoint)
-				OnClicked.ExecuteIfBound(id);
+			OnClicked.ExecuteIfBound(Data.ID);
 			return FReply::Handled();
 		})
 		[
-			SNew(SVerticalBox)
-			+SVerticalBox::Slot()
-			[
-				SAssignNew(Tag,STextBlock)
-			]
-			+SVerticalBox::Slot()
-			[
-				SAssignNew(Player,STextBlock)
-			]
-			+SVerticalBox::Slot()
-			[
-				SAssignNew(Trap,STextBlock)
-			]
-			+SVerticalBox::Slot()
-			[
-				SAssignNew(MovePoint,STextBlock)
-			]
-			+ SVerticalBox::Slot()
-			[
-				SAssignNew(IsTrapped, STextBlock)
-			]
-		]
+			SNew(SImage)
+			.Image_Lambda([&]() {
+				PawnMaterialInstance->SetScalarParameterValue(FName(TEXT("PawnID")), int(Data.Type)-1);
+				PawnMaterialInstance->SetScalarParameterValue(FName(TEXT("Misted")), Data.Misted);
+				PawnMaterialInstance->SetScalarParameterValue(FName(TEXT("IsFlipped")), Data.IsFlipped);
+				PawnMaterialInstance->SetScalarParameterValue(FName(TEXT("IsMine")), Data.IsMine);
+				PawnMaterialInstance->SetScalarParameterValue(FName(TEXT("IsNearTrap")), Data.IsNearTrap);
+				PawnMaterialInstance->SetScalarParameterValue(FName(TEXT("IsMovePoint")), Data.IsMovePoint);
+				PawnMaterialInstance->SetScalarParameterValue(FName(TEXT("IsMyRound")), *IsMyRound);
+				PawnMaterialInstance->SetScalarParameterValue(FName(TEXT("IsMyTrap")), Data.IsMyTrap);
+				PawnMaterialInstance->SetScalarParameterValue(FName(TEXT("IsEnemyTrap")), Data.IsEnemyTrap);
+				PawnMaterialInstance->SetScalarParameterValue(FName(TEXT("IsSelected")), Data.IsSelected);
+				PawnMaterialInstance->SetScalarParameterValue(FName(TEXT("IsTrapped")), Data.IsTrapped);
+				PawnMaterialInstance->SetScalarParameterValue(FName(TEXT("IsSteppingOnMyTrap")), Data.IsMyTrap && Data.IsCard());
+
+
+				return PawnBrush; 
+			})
+		]	
 	];
 	
 }
-bool SHNetBoardItemWidget::IsMovePoint()
+
+void SHNetBoardItemWidget::AddReferencedObjects(FReferenceCollector& Collector)
 {
-	return _IsMovePoint;
+	Collector.AddReferencedObject(PawnMaterialInstance);
 }
 
-bool SHNetBoardItemWidget::IsMine() {
-	return Data.isMine;
-}
-
-bool SHNetBoardItemWidget::IsCard()
-{
-	return Data.Type!=ECardType::Delete&&Data.Type!=ECardType::Trap;
-}
-
-bool SHNetBoardItemWidget::IsTrap()
-{
-	return _IsTrap;
-}
-
-void SHNetBoardItemWidget::AddMovePoint(){
-	_IsMovePoint = true;
-	MovePoint->SetText(FString("MovePoint"));
-}
-
-void SHNetBoardItemWidget::RemoveMovePoint(){
-	_IsMovePoint = false;
-	MovePoint->SetText(FString(""));
-}
-
-void SHNetBoardItemWidget::AddSelectedPoint(){
-	_IsMovePoint = true;
-	MovePoint->SetText(FString("SelectedPoint"));
-}
-
-void SHNetBoardItemWidget::RemoveSelectedPoint(){
-	_IsMovePoint = false;
-	MovePoint->SetText(FString(""));
-}
-
-void SHNetBoardItemWidget::AddMyTrap(){
-	Player->SetText(FString("M"));
-	Data.isMine = true;
-	_IsTrap = true;
-	Trap->SetText(FString("Trap"));
-}
-
-void SHNetBoardItemWidget::AddEnemyTrap() {
-	Player->SetText(FString("E"));
-	Data.isMine = false;
-	_IsTrap = true;
-	Trap->SetText(FString("Trap"));
-}
-
-void SHNetBoardItemWidget::RemoveTrap() {
-	if (Data.Type == ECardType::Delete)
-		Player->SetText(FString(""));
-	_IsTrap = false;
-	Trap->SetText(FString(""));
-}
-
-void SHNetBoardItemWidget::Trapped()
-{
-	_IsTrapped = true;
-	Data.IsFlipped = true;
-	IsTrapped->SetText(FString("IsTrapped"));
-}
-
-void SHNetBoardItemWidget::Delete() {
-	Data = BoardItem();
-	SetType(Data);
-	RemoveTrap();
-	FreeFromTrap();
-}
-
-
-void SHNetBoardItemWidget::FreeFromTrap()
-{
-	_IsTrapped = false;
-	IsTrapped->SetText(FString(""));
-}
-
-void SHNetBoardItemWidget::Go(TSharedPtr<SHNetBoardItemWidget> To)
-{
-	bool ismine = Data.isMine;
-	To->Data = Data;
-	To->SetType(Data);
-	Data = BoardItem();
-	SetType(Data);
-	if (IsTrap())
-		if (ismine)
-			AddMyTrap();
-		else
-			AddEnemyTrap();
-}
-
-
-void SHNetBoardItemWidget::SetType(ECardType In, bool IsMine)
-{
-	Data.isMine = IsMine;
-	if (IsMine) {
-		Player->SetText(FString("M"));
-	}
-	else {
-		Player->SetText(FString("E"));
-	}
-	switch (In)
-	{
-	case ECardType::Delete:
-		Tag->SetText(FString(""));
-		break;
-	case ECardType::CoreObject:
-		Tag->SetText(FString("CoreObject"));
-		break;
-	case ECardType::TrojanHorse:
-		Tag->SetText(FString("TrojanHorse"));
-		break;
-	case ECardType::FakeTarget:
-		Tag->SetText(FString("FakeTarget"));
-		break;
-	default:
-		break;
-	}
-	Data.Type = In;
-}
-void SHNetBoardItemWidget::SetType(BoardItem data)
-{
-	if (data.Type != ECardType::Delete) {
-		if (data.isMine) {
-			Player->SetText(FString("M"));
-		}
-		else {
-			Player->SetText(FString("E"));
-		}
-	}
-	else {
-		Player->SetText(FString(""));
-	}
-	switch (data.Type)
-	{
-	case ECardType::Delete:
-		Tag->SetText(FString(""));
-		break;
-	case ECardType::CoreObject:
-		Tag->SetText(FString("CoreObject"));
-		break;
-	case ECardType::TrojanHorse:
-		Tag->SetText(FString("TrojanHorse"));
-		break;
-	case ECardType::FakeTarget:
-		Tag->SetText(FString("FakeTarget"));
-		break;
-	default:
-		break;
-	}
-}
-ECardType SHNetBoardItemWidget::GetType()
-{
-	return Data.Type;
-}
 END_SLATE_FUNCTION_BUILD_OPTIMIZATION

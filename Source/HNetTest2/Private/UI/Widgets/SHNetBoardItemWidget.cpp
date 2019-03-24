@@ -4,7 +4,7 @@
 #include "SButton.h"
 #include "STextBlock.h"
 #include "SImage.h"
-#include "VerticalBox.h"
+#include "SBoxPanel.h"
 #include "SlateOptMacros.h"
 #include "HNetStyle.h"
 #include "HNetGameWidgetStyle.h"

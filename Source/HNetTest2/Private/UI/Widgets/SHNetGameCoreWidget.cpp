@@ -1,8 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "SHNetGameCoreWidget.h"
-#include "HorizontalBox.h"
-#include "VerticalBox.h"
+#include "SBoxPanel.h"
 #include "SButton.h"
 #include "SOverlay.h"
 #include "SBox.h"
@@ -203,8 +202,8 @@ void SHNetGameCoreWidget::BoardItemOnClicked(int id) {
 						switch (ECardType(SelectedCard))
 						{
 						case ECardType::CoreObject:
-							*MyCoreObjectNum--;
-							*MyFakeTargetNum++;
+							(*MyCoreObjectNum)--;
+							(*MyFakeTargetNum)++;
 							BoardItems[id]->Type = ECardType(SelectedCard);
 							BoardItems[id]->IsMine = true;
 							if (BoardItems[id]->IsEnemyTrap) {
@@ -214,8 +213,8 @@ void SHNetGameCoreWidget::BoardItemOnClicked(int id) {
 							}
 							break;
 						case ECardType::TrojanHorse:
-							*MyTrojanHorseNum--;
-							*MyFakeTargetNum++;
+							(*MyTrojanHorseNum)--;
+							(*MyFakeTargetNum)++;
 							BoardItems[id]->Type = ECardType(SelectedCard);
 							BoardItems[id]->IsMine = true;
 							if (BoardItems[id]->IsEnemyTrap) {
@@ -225,7 +224,7 @@ void SHNetGameCoreWidget::BoardItemOnClicked(int id) {
 							}
 							break;
 						case ECardType::FakeTarget:
-							*MyFakeTargetNum--;
+							(*MyFakeTargetNum)--;
 							BoardItems[id]->Type = ECardType(SelectedCard);
 							BoardItems[id]->IsMine = true;
 							if (BoardItems[id]->IsEnemyTrap) {
@@ -249,6 +248,7 @@ void SHNetGameCoreWidget::BoardItemOnClicked(int id) {
 			}
 			else { // Remove
 				BoardItems[id]->Delete();
+				(*MyForceDeleteCountDown) = 20;
 				BoardCard.ExecuteIfBound(id, SelectedCard);
 				RoundEnd();
 				return;
@@ -536,13 +536,13 @@ void SHNetGameCoreWidget::ShowMovePoint() {
 void SHNetGameCoreWidget::MeAttack(int To, int From) {
 	switch (BoardItems[To]->Type) {
 	case ECardType::CoreObject:
-		*MyCoreObjectNum++;
+		(*MyCoreObjectNum)++;
 		break;
 	case ECardType::FakeTarget:
-		*MyFakeTargetNum++;
+		(*MyFakeTargetNum)++;
 		break;
 	case ECardType::TrojanHorse:
-		*MyTrojanHorseNum++;
+		(*MyTrojanHorseNum)++;
 		break;
 	}
 	BoardItems[To]->IsTrapped = false;
@@ -570,13 +570,13 @@ void SHNetGameCoreWidget::MeShoot(int To, int From) {
 	}
 	switch (BoardItems[To]->Type) {
 	case ECardType::CoreObject:
-		*MyCoreObjectNum++;
+		(*MyCoreObjectNum)++;
 		break;
 	case ECardType::FakeTarget:
-		*MyFakeTargetNum++;
+		(*MyFakeTargetNum)++;
 		break;
 	case ECardType::TrojanHorse:
-		*MyTrojanHorseNum++;
+		(*MyTrojanHorseNum)++;
 		break;
 	}
 	BoardItems[To]->IsTrapped = false;
@@ -595,13 +595,13 @@ void SHNetGameCoreWidget::EnemyMoved(int To, int From) {
 	if (p.X + p.Y == 1) {
 		switch (BoardItems[To]->Type) {
 		case ECardType::CoreObject:
-			*EnemyCoreObjectNum++;
+			(*EnemyCoreObjectNum)++;
 			break;
 		case ECardType::FakeTarget:
-			*EnemyFakeTargetNum++;
+			(*EnemyFakeTargetNum)++;
 			break;
 		case ECardType::TrojanHorse:
-			*EnemyTrojanHorseNum++;
+			(*EnemyTrojanHorseNum)++;
 			break;
 		}
 		BoardItems[To]->IsTrapped = false;
@@ -628,13 +628,13 @@ void SHNetGameCoreWidget::EnemyMoved(int To, int From) {
 		}
 		switch (BoardItems[To]->Type) {
 		case ECardType::CoreObject:
-			*EnemyCoreObjectNum++;
+			(*EnemyCoreObjectNum)++;
 			break;
 		case ECardType::FakeTarget:
-			*EnemyFakeTargetNum++;
+			(*EnemyFakeTargetNum)++;
 			break;
 		case ECardType::TrojanHorse:
-			*EnemyTrojanHorseNum++;
+			(*EnemyTrojanHorseNum)++;
 			break;
 		}
 		BoardItems[To]->IsTrapped = false;
@@ -656,9 +656,10 @@ void SHNetGameCoreWidget::EnemyCard(int To, int Card) {
 	{
 	case ECardType::Delete:
 		BoardItems[To]->Delete();
+		(*EnemyForceDeleteCountDown) = 20;
 		break;
 	case ECardType::CoreObject:
-		*EnemyCoreObjectNum--;
+		(*EnemyCoreObjectNum)--;
 		if (BoardItems[To]->IsMyTrap) {
 			BoardItems[To]->IsMyTrap = false;
 			BoardItems[To]->IsFlipped = true;
@@ -668,7 +669,7 @@ void SHNetGameCoreWidget::EnemyCard(int To, int Card) {
 		BoardItems[To]->IsMine = false;
 		break;
 	case ECardType::TrojanHorse:
-		*EnemyTrojanHorseNum--;
+		(*EnemyTrojanHorseNum)--;
 		if (BoardItems[To]->IsMyTrap) {
 			BoardItems[To]->IsMyTrap = false;
 			BoardItems[To]->IsFlipped = true;
@@ -678,7 +679,7 @@ void SHNetGameCoreWidget::EnemyCard(int To, int Card) {
 		BoardItems[To]->IsMine = false;
 		break;
 	case ECardType::FakeTarget:
-		*EnemyFakeTargetNum--;
+		(*EnemyFakeTargetNum)--;
 		if (BoardItems[To]->IsMyTrap) {
 			BoardItems[To]->IsMyTrap = false;
 			BoardItems[To]->IsFlipped = true;

@@ -1,8 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "SHNetFunctionAreaWidget.h"
-#include "HorizontalBox.h"
-#include "VerticalBox.h"
+#include "SBoxPanel.h"
 #include "SButton.h"
 #include "SOverlay.h"
 #include "SBox.h"
@@ -218,6 +217,7 @@ void SHNetFunctionAreaWidget::AddReferencedObjects(FReferenceCollector& Collecto
 void SHNetFunctionAreaWidget::RoundStart(){
 	ForceDeleteCountDown--;
 	IsMyRound = true;
+	SelectedCard = ECardType(-1);
 	if (ForceDeleteCountDown < 0)ForceDeleteCountDown = 0;
 	PawnSelectionSectionMaterialInstance->SetVectorParameterValue(FName(TEXT("State")), FLinearColor(TrojanHorseNum == 0, CoreObjectNum == 0, FakeTargetNum == 0, 0));
 	DeleteMaterialInstance->SetScalarParameterValue(FName(TEXT("State")), ForceDeleteCountDown ? 2 : 0);

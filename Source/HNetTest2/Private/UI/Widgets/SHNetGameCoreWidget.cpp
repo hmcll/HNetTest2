@@ -255,7 +255,7 @@ void SHNetGameCoreWidget::BoardItemOnClicked(int id) {
 			}
 		}
 		else if (SelectedItem == -1) {//New Click
-			if (BoardItems[id]->IsCard() && BoardItems[id]->IsMine) {
+			if (BoardItems[id]->IsCard() && BoardItems[id]->IsMine && !(BoardItems[id]->IsTrapped)) {
 				SelectedItem = id;
 				ShowMovePoint();
 			}
@@ -426,6 +426,7 @@ void SHNetGameCoreWidget::ClearMist() {
 
 	}
 }
+
 void SHNetGameCoreWidget::RoundStart() {
 	ClearMist();
 	int CheckWinRet = CheckWin();
@@ -442,8 +443,13 @@ void SHNetGameCoreWidget::RoundStart() {
 			LeftFunctionArea->RoundEnd();
 		}
 		for (auto i : BoardItems) {
-			if (i->IsMine && i->IsTrapped) {
-				i->IsTrapped = false;
+			if (i->IsMine&& i->IsTrapped) {
+				if (i->IsFlipped) {
+					i->IsTrapped = false;
+				}
+				else {
+					i->IsFlipped = true;
+				}
 			}
 		}
 	}
@@ -470,8 +476,13 @@ void SHNetGameCoreWidget::RoundEnd() {
 			LeftFunctionArea->RoundEnd();
 		}
 		for (auto i : BoardItems) {
-			if (!i->IsMine && i->IsTrapped) {
-				i->IsTrapped = false;
+			if (!(i->IsMine)&& i->IsTrapped) {
+				if (i->IsFlipped) {
+					i->IsTrapped = false;
+				}
+				else {
+					i->IsFlipped = true;
+				}
 			}
 		}
 	}
